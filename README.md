@@ -4,7 +4,7 @@ Local web app to turn your own app screenshots into high-converting App Store / 
 
 No device-frame rendering and no AI — you supply the screenshot, the tool frames and dresses it deterministically. What you see in the preview is exactly what exports.
 
-![showcase](output/showcase.png)
+![showcase](docs/showcase.png)
 
 ## Setup
 
