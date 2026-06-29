@@ -11,10 +11,13 @@ export const TARGETS = [
   { id: 'ios-iphone-6.9', group: 'ios/iphone', label: 'iPhone 6.9"', w: 1320, h: 2868, required: true },
   { id: 'ios-iphone-6.7', group: 'ios/iphone', label: 'iPhone 6.7"', w: 1290, h: 2796 },
   { id: 'ios-iphone-6.5', group: 'ios/iphone', label: 'iPhone 6.5"', w: 1242, h: 2688 },
+  { id: 'ios-iphone-6.3', group: 'ios/iphone', label: 'iPhone 6.3"', w: 1206, h: 2622 },
+  { id: 'ios-iphone-6.1', group: 'ios/iphone', label: 'iPhone 6.1"', w: 1170, h: 2532 },
 
   // iOS iPad
   { id: 'ios-ipad-13', group: 'ios/ipad', label: 'iPad 13"', w: 2064, h: 2752 },
   { id: 'ios-ipad-12.9', group: 'ios/ipad', label: 'iPad 12.9"', w: 2048, h: 2732 },
+  { id: 'ios-ipad-11', group: 'ios/ipad', label: 'iPad 11"', w: 1668, h: 2388 },
 
   // Android (Google Play)
   { id: 'android-phone', group: 'android', label: 'Android phone', w: 1080, h: 1920, required: true },
