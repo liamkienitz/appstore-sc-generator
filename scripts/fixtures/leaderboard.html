@@ -1,0 +1,67 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+  html,body { width:402px; height:874px; background:#fff; font-family:-apple-system,"Helvetica Neue",Arial,sans-serif; color:#0f172a; }
+  .wrap { width:402px; height:874px; display:flex; flex-direction:column; overflow:hidden; }
+  .status { height:54px; display:flex; align-items:center; justify-content:space-between; padding:0 28px; position:relative; }
+  .status .time { font-weight:600; font-size:17px; }
+  .island { position:absolute; left:50%; top:14px; transform:translateX(-50%); width:118px; height:34px; background:#000; border-radius:20px; }
+  .sysr { display:flex; align-items:center; gap:6px; }
+  .bars { width:18px; height:12px; background:#000; clip-path:polygon(0 70%,18% 70%,18% 100%,0 100%, 27% 45%,45% 45%,45% 100%,27% 100%, 55% 22%,73% 22%,73% 100%,55% 100%, 82% 0,100% 0,100% 100%,82% 100%); }
+  .wifi { width:18px; height:13px; background:#000; clip-path:polygon(50% 0,100% 38%,82% 55%,50% 30%,18% 55%,0 38%); }
+  .batt { width:26px; height:13px; border:1.5px solid #000; border-radius:4px; position:relative; }
+  .batt::after { content:''; position:absolute; left:1.5px; top:1.5px; bottom:1.5px; width:70%; background:#34d399; border-radius:2px; }
+  header { display:flex; align-items:center; padding:14px 20px 16px; gap:12px; }
+  .logo { width:46px; height:46px; border-radius:13px; background:#16a34a; display:flex; align-items:center; justify-content:center; }
+  .logo .ring { width:30px; height:30px; border-radius:50%; border:3px solid #fff; display:flex; align-items:center; justify-content:center; }
+  .logo .ring::after { content:''; width:10px; height:10px; border-radius:50%; background:#fff; }
+  .brand b { font-size:20px; font-weight:800; display:block; line-height:1.1; }
+  .brand span { font-size:14px; color:#16a34a; font-weight:600; }
+  .hicons { margin-left:auto; display:flex; align-items:center; gap:14px; }
+  .hicons .ic { width:22px; height:22px; border:2.4px solid #0f172a; border-radius:6px; opacity:.85; }
+  .hicons .av { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#db2777,#7c3aed,#f59e0b); }
+  .band { background:#ecfdf3; padding:14px 20px 16px; display:flex; align-items:center; }
+  .band .date { font-size:24px; font-weight:800; } .band .lt { color:#94a3b8; font-weight:700; margin-right:6px; }
+  .band .sub { color:#64748b; font-size:15px; margin-top:2px; }
+  .pill { margin-left:auto; background:#16a34a; color:#fff; font-weight:700; font-size:14px; padding:7px 14px; border-radius:999px; }
+  .pad { padding:14px 16px 0; }
+  .view { width:100%; background:#16a34a; color:#fff; border:none; height:58px; border-radius:14px; font-size:18px; font-weight:700; }
+  .two { display:flex; gap:12px; margin-top:12px; }
+  .two .b { flex:1; height:54px; border:1px solid #e5e7eb; border-radius:14px; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; font-size:16px; }
+  .del { margin-top:12px; width:100%; height:54px; border:1px solid #fecaca; color:#dc2626; border-radius:14px; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; font-size:16px; }
+  .card { margin:16px 16px 0; border:1px solid #eef0f3; border-radius:18px; padding:18px; }
+  .card h3 { font-size:20px; font-weight:800; } .card .cs { color:#64748b; font-size:15px; margin:2px 0 14px; }
+  hr { border:none; border-top:1px solid #eef0f3; margin:0 0 14px; }
+  .lh { font-size:17px; font-weight:800; margin-bottom:12px; }
+  .rank { display:flex; align-items:center; gap:12px; border:2px solid; border-radius:14px; padding:13px 16px; margin-bottom:12px; }
+  .rank .pa { width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:14px; }
+  .rank .nm b { font-size:17px; font-weight:800; color:#fff; display:block; } .rank .nm span { color:#fff; opacity:.9; font-weight:600; font-size:14px; }
+  .rank .pos { margin-left:auto; color:#fff; font-weight:800; font-size:14px; }
+  .r1 { background:#f5b971; border-color:#e09a3e; } .r2 { background:#9aa4b8; border-color:#6b7280; } .r3 { background:#c08552; border-color:#9a6a3f; }
+  .av1 { background:linear-gradient(135deg,#db2777,#7c3aed,#f59e0b)!important; }
+  nav { margin-top:auto; display:flex; justify-content:space-around; padding:10px 0 16px; border-top:1px solid #f1f5f9; }
+  nav div { display:flex; flex-direction:column; align-items:center; gap:4px; color:#64748b; font-size:12px; font-weight:600; }
+  nav .ic2 { width:22px; height:22px; border:2.4px solid currentColor; border-radius:6px; } nav .new { color:#16a34a; }
+</style></head><body>
+<div class="wrap">
+  <div class="status"><span class="time">9:41</span><div class="island"></div>
+    <div class="sysr"><span class="bars"></span><span class="wifi"></span><span class="batt"></span></div></div>
+  <header><div class="logo"><div class="ring"></div></div>
+    <div class="brand"><b>Clayshot Pro</b><span>Precision Tracking</span></div>
+    <div class="hicons"><span class="ic"></span><span class="ic"></span><span class="av"></span></div></header>
+  <div class="band"><div><div class="date"><span class="lt">‹</span>June 19, 2026</div><div class="sub">1 station · 10 shots</div></div><div class="pill">Complete</div></div>
+  <div class="pad">
+    <button class="view">View or edit scores</button>
+    <div class="two"><div class="b">✎ Edit</div><div class="b">⤴ Share</div></div>
+    <div class="del">🗑 Delete</div>
+  </div>
+  <div class="card">
+    <h3>Session complete</h3><div class="cs">Here's how everyone did</div><hr>
+    <div class="lh">Leaderboard</div>
+    <div class="rank r1"><div class="pa av1"></div><div class="nm"><b>Alex Carter</b><span>8/10 · 80%</span></div><div class="pos">1ST</div></div>
+    <div class="rank r2"><div class="pa" style="background:#16a34a">JL</div><div class="nm"><b>Jordan Lee</b><span>7/10 · 70%</span></div><div class="pos">2ND</div></div>
+    <div class="rank r3"><div class="pa" style="background:#16a34a">SR</div><div class="nm"><b>Sam Rivera</b><span>6/10 · 60%</span></div><div class="pos">3RD</div></div>
+  </div>
+  <nav><div><span class="ic2"></span>Home</div><div class="new"><span class="ic2"></span>New</div><div><span class="ic2"></span>History</div><div><span class="ic2"></span>Analytics</div></nav>
+</div>
+</body></html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+  html,body { width:402px; height:874px; background:#fff;
+    font-family:-apple-system,"SF Pro Display","Helvetica Neue",Arial,sans-serif; color:#0f172a; }
+  .wrap { width:402px; height:874px; display:flex; flex-direction:column; overflow:hidden; }
+  .status { height:54px; display:flex; align-items:center; justify-content:space-between; padding:0 28px; position:relative; }
+  .status .time { font-weight:600; font-size:17px; }
+  .island { position:absolute; left:50%; top:14px; transform:translateX(-50%); width:118px; height:34px; background:#000; border-radius:20px; }
+  .sysr { display:flex; align-items:center; gap:6px; }
+  .bars { width:18px; height:12px; background:#000; clip-path:polygon(0 70%,18% 70%,18% 100%,0 100%, 27% 45%,45% 45%,45% 100%,27% 100%, 55% 22%,73% 22%,73% 100%,55% 100%, 82% 0,100% 0,100% 100%,82% 100%); }
+  .wifi { width:18px; height:13px; background:#000; clip-path:polygon(50% 0,100% 38%,82% 55%,50% 30%,18% 55%,0 38%); }
+  .batt { width:26px; height:13px; border:1.5px solid #000; border-radius:4px; position:relative; }
+  .batt::after { content:''; position:absolute; left:1.5px; top:1.5px; bottom:1.5px; width:70%; background:#34d399; border-radius:2px; }
+  .batt .bolt { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:9px; }
+
+  header { display:flex; align-items:center; padding:14px 20px 16px; gap:12px; }
+  .logo { width:46px; height:46px; border-radius:13px; background:#16a34a; display:flex; align-items:center; justify-content:center; }
+  .logo .ring { width:30px; height:30px; border-radius:50%; border:3px solid #fff; display:flex; align-items:center; justify-content:center; }
+  .logo .ring::after { content:''; width:10px; height:10px; border-radius:50%; background:#fff; }
+  .brand b { font-size:20px; font-weight:800; display:block; line-height:1.1; }
+  .brand span { font-size:14px; color:#16a34a; font-weight:600; }
+  .hicons { margin-left:auto; display:flex; align-items:center; gap:14px; }
+  .hicons .ic { width:22px; height:22px; border:2.4px solid #0f172a; border-radius:6px; opacity:.85; }
+  .hicons .av { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#db2777,#7c3aed,#f59e0b); }
+
+  .band { background:#ecfdf3; padding:14px 20px 16px; }
+  .band .date { font-size:24px; font-weight:800; }
+  .band .sub { color:#64748b; font-size:15px; margin-top:2px; }
+  .band .lt { color:#94a3b8; font-weight:700; margin-right:6px; }
+
+  .card { margin:14px 16px 0; border:1px solid #eef0f3; border-radius:18px; padding:18px 18px; box-shadow:0 1px 0 rgba(0,0,0,.02); }
+  .rowb { display:flex; justify-content:space-between; align-items:flex-start; }
+  .lbl { color:#94a3b8; font-size:13px; font-weight:700; letter-spacing:.03em; }
+  .shooter { font-size:22px; font-weight:800; margin-top:4px; }
+  .hits { font-size:18px; font-weight:800; text-align:right; }
+  .pct { color:#94a3b8; font-weight:700; text-align:right; }
+  hr { border:none; border-top:1px solid #eef0f3; margin:16px 0; }
+  .station { display:flex; align-items:center; justify-content:space-between; }
+  .station .big { font-size:34px; font-weight:800; }
+  .dd { margin-top:12px; border:1px solid #e5e7eb; border-radius:12px; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; font-size:16px; font-weight:600; }
+  .dd .car { color:#94a3b8; }
+
+  .grid { display:flex; gap:9px; margin-top:16px; flex-wrap:wrap; }
+  .chip { width:42px; height:42px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:17px; border:2px solid; }
+  .hit { background:#bbf7d0; border-color:#22c55e; color:#15803d; }
+  .miss { background:#fecaca; border-color:#f87171; color:#b91c1c; }
+  .cur { background:#fef9c3; border-color:#facc15; }
+  .cur::after { content:''; width:14px; height:14px; border-radius:50%; background:#f59e0b; }
+  .pend { background:#f1f5f9; border-color:#e2e8f0; color:#94a3b8; }
+
+  .sb { margin:16px 16px 0; border:1px solid #eef0f3; border-radius:18px; padding:16px 18px; }
+  .sb h3 { font-size:18px; font-weight:800; margin-bottom:10px; }
+  .sb .st { font-size:16px; font-weight:800; margin-bottom:12px; }
+  .player { display:flex; align-items:center; gap:12px; }
+  .pa { width:40px; height:40px; border-radius:50%; background:#16a34a; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; }
+  .pn b { font-size:16px; font-weight:800; display:block; }
+  .pn span { color:#64748b; font-size:14px; }
+  .mini { margin-left:auto; display:flex; gap:6px; }
+  .mc { width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; border:2px solid; }
+
+  .undo { text-align:right; color:#64748b; font-weight:700; padding:14px 22px 8px; }
+  .cta { display:flex; gap:14px; padding:6px 16px 12px; }
+  .cta button { flex:1; height:74px; border:none; border-radius:18px; color:#fff; font-size:22px; font-weight:800; }
+  .cta .m { background:#f87171; }
+  .cta .h { background:#16a34a; }
+
+  nav { margin-top:auto; display:flex; justify-content:space-around; padding:10px 0 16px; border-top:1px solid #f1f5f9; }
+  nav div { display:flex; flex-direction:column; align-items:center; gap:4px; color:#64748b; font-size:12px; font-weight:600; }
+  nav .ic2 { width:22px; height:22px; border:2.4px solid currentColor; border-radius:6px; }
+  nav .new { color:#16a34a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="status">
+    <span class="time">9:41</span>
+    <div class="island"></div>
+    <div class="sysr"><span class="bars"></span><span class="wifi"></span><span class="batt"><span class="bolt">⚡</span></span></div>
+  </div>
+
+  <header>
+    <div class="logo"><div class="ring"></div></div>
+    <div class="brand"><b>Clayshot Pro</b><span>Precision Tracking</span></div>
+    <div class="hicons"><span class="ic"></span><span class="ic"></span><span class="av"></span></div>
+  </header>
+
+  <div class="band">
+    <div class="date"><span class="lt">‹</span>June 19, 2026</div>
+    <div class="sub">Station 1 · Shot 8 of 10</div>
+  </div>
+
+  <div class="card">
+    <div class="rowb">
+      <div><div class="lbl">SHOOTER</div><div class="shooter">⌄ Alex Carter</div></div>
+      <div><div class="hits">5 hits</div><div class="pct">71%</div></div>
+    </div>
+    <hr>
+    <div class="station"><div class="lbl">STATION <span class="big">1</span></div><div class="lbl">GUN</div></div>
+    <div class="dd">Winchester Model 21 <span class="car">⌄</span></div>
+    <div class="grid">
+      <div class="chip hit">✓</div><div class="chip hit">✓</div><div class="chip miss">✕</div><div class="chip miss">✕</div><div class="chip hit">✓</div><div class="chip hit">✓</div><div class="chip hit">✓</div>
+    </div>
+    <div class="grid">
+      <div class="chip cur"></div><div class="chip pend">9</div><div class="chip pend">10</div>
+    </div>
+  </div>
+
+  <div class="sb">
+    <h3>Scoreboard</h3>
+    <div class="st">Station 1</div>
+    <div class="player">
+      <div class="pa">JL</div>
+      <div class="pn"><b>Jordan Lee</b><span>4/10</span></div>
+      <div class="mini"><div class="mc hit">✓</div><div class="mc hit">✓</div><div class="mc miss">✕</div><div class="mc hit">✓</div><div class="mc hit">✓</div><div class="mc miss">✕</div></div>
+    </div>
+  </div>
+
+  <div class="undo">↺ UNDO</div>
+  <div class="cta"><button class="m">Miss</button><button class="h">Hit</button></div>
+
+  <nav>
+    <div><span class="ic2"></span>Home</div>
+    <div class="new"><span class="ic2"></span>New</div>
+    <div><span class="ic2"></span>History</div>
+    <div><span class="ic2"></span>Analytics</div>
+  </nav>
+</div>
+</body>
+</html>
