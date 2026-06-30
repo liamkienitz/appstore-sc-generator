@@ -13,17 +13,11 @@ const aspect = meta.height / meta.width
 const cardW = Math.round(safeW * 1.0)
 const cardH = Math.round(cardW * aspect)
 const cardX = Math.round((W - cardW) / 2)
-const cardTop = Math.round(0.3 * H)
 const radius = Math.round(cardW * 0.09)
 
-// rounded screenshot (clamp height to canvas — the browser canvas just clips the bleed)
-const visH = Math.min(cardH, H - cardTop)
 const roundedFull = await sharp(await sharp(screenshotPath).resize(cardW, cardH, { fit: 'fill' }).png().toBuffer())
   .composite([{ input: Buffer.from(`<svg><rect x="0" y="0" width="${cardW}" height="${cardH}" rx="${radius}" ry="${radius}"/></svg>`), blend: 'dest-in' }])
   .png().toBuffer()
-const rounded = visH < cardH
-  ? await sharp(roundedFull).extract({ left: 0, top: 0, width: cardW, height: visH }).png().toBuffer()
-  : roundedFull
 
 // auto-fit heading size
 function fit(text, weight, maxW, start, min) {
@@ -51,6 +45,13 @@ if (line) subLines.push(line)
 
 let sy = hy + sSize * 0.55
 const subTspans = subLines.map((ln) => { sy += sSize * 1.05; return `<text x="${W / 2}" y="${Math.round(sy)}" font-size="${sSize}" font-weight="700" text-anchor="middle">${ln}</text>` }).join('')
+
+// card starts below the text bottom (mirrors render.js fix)
+const cardTop = Math.round(Math.max(0.3 * H, sy + H * 0.025))
+const visH = Math.min(cardH, H - cardTop)
+const rounded = visH < cardH
+  ? await sharp(roundedFull).extract({ left: 0, top: 0, width: cardW, height: visH }).png().toBuffer()
+  : roundedFull
 
 const textSvg = `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
   <style>text{font-family:'Helvetica Neue',Arial,sans-serif;fill:#fff;}</style>

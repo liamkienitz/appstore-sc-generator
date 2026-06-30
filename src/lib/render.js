@@ -85,25 +85,36 @@ export function renderMaster(canvas, opts, screenshotImg, dims = MASTER) {
     ctx.fillText(heading, cx, y)
   }
 
-  // --- Subtext (can wrap to 2 lines) ---
+  // --- Subtext (wraps to 2 lines, or shrinks to one line when noWrap) ---
   const sub = (opts.subtext || '').toUpperCase()
   if (sub) {
     const words = sub.split(' ')
-    // Size by the longest single word so the subtext can grow large and wrap,
-    // instead of being clamped to fit the whole line at once.
-    const longest = words.reduce((a, b) => (a.length >= b.length ? a : b), '')
-    const subSize = fitFont(ctx, longest, subFace, safeW, Math.round(130 * (opts.subScale ?? 1)), 32)
-    ctx.font = subFace.replace('SIZE', subSize)
-    const lines = []
-    let line = ''
-    for (const word of words) {
-      const test = line ? `${line} ${word}` : word
-      if (ctx.measureText(test).width > safeW && line) {
-        lines.push(line)
-        line = word
-      } else line = test
+    let lines
+    let subSize
+    if (opts.subNoWrap) {
+      // Force a single line: shrink the whole phrase to fit the safe width.
+      // This keeps narrower targets (Android 9:16, iPad) on one line instead of
+      // wrapping a phrase that fit on one line at the iPhone master width.
+      subSize = fitFont(ctx, sub, subFace, safeW, Math.round(130 * (opts.subScale ?? 1)), 20)
+      ctx.font = subFace.replace('SIZE', subSize)
+      lines = [sub]
+    } else {
+      // Size by the longest single word so the subtext can grow large and wrap,
+      // instead of being clamped to fit the whole line at once.
+      const longest = words.reduce((a, b) => (a.length >= b.length ? a : b), '')
+      subSize = fitFont(ctx, longest, subFace, safeW, Math.round(130 * (opts.subScale ?? 1)), 32)
+      ctx.font = subFace.replace('SIZE', subSize)
+      lines = []
+      let line = ''
+      for (const word of words) {
+        const test = line ? `${line} ${word}` : word
+        if (ctx.measureText(test).width > safeW && line) {
+          lines.push(line)
+          line = word
+        } else line = test
+      }
+      if (line) lines.push(line)
     }
-    if (line) lines.push(line)
     y += subSize * 0.55
     for (const ln of lines) {
       y += subSize * 1.05
@@ -113,7 +124,10 @@ export function renderMaster(canvas, opts, screenshotImg, dims = MASTER) {
 
   // --- Screenshot card (positioned high, bottom bleeds off canvas) ---
   if (screenshotImg && screenshotImg.width) {
-    const cardTop = h * (opts.deviceTop ?? 0.3)
+    // start below the actual text bottom (`y`) so heading/subtext are never covered,
+    // which matters on shorter canvases (Android 9:16, iPad) where the text block
+    // would otherwise collide with a fixed-fraction card position.
+    const cardTop = Math.max(h * (opts.deviceTop ?? 0.3), y + h * 0.025)
     const cardW = safeW * (opts.deviceScale ?? 1.0)
     const aspect = screenshotImg.height / screenshotImg.width
     const cardH = cardW * aspect

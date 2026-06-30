@@ -27,6 +27,7 @@ function newShot(i) {
     headingItalic: false,
     subWeight: 700,
     subItalic: false,
+    subNoWrap: false,
     deviceTop: 0.3,
     deviceScale: 1.0,
   }
@@ -221,6 +222,9 @@ export default function App() {
         <input type="text" value={shot.subtext} placeholder="EVERY SHOT LIVE" onChange={(e) => patch({ subtext: e.target.value })} />
         <label>Subtext size: {(shot.subScale * 100).toFixed(0)}%</label>
         <input type="range" min="0.5" max="3" step="0.05" value={shot.subScale} onChange={(e) => patch({ subScale: Number(e.target.value) })} style={{ width: '100%' }} />
+        <label className="check" style={{ marginTop: 8 }}>
+          <input type="checkbox" checked={shot.subNoWrap} onChange={(e) => patch({ subNoWrap: e.target.checked })} /> Don't wrap (shrink to one line)
+        </label>
 
         <label>Font</label>
         <select value={shot.fontFamily} onChange={(e) => patch({ fontFamily: e.target.value })}>
