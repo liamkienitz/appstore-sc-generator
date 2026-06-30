@@ -1,50 +1,93 @@
-// Talk to the backend directly so export works whether the page is served by the
-// vite dev server, `vite preview`, or an IDE preview pane (none of which may proxy /api).
-// Override with VITE_API_BASE if you run the server on another host/port.
-const API_BASE = import.meta.env?.VITE_API_BASE || 'http://localhost:3001'
+// Fully client-side: no backend. Drafts live in localStorage; export resizes
+// each master in a <canvas> and zips with JSZip — so the app deploys as a pure
+// static site (e.g. Cloudflare Pages) with nothing to run server-side.
+import JSZip from 'jszip'
+import { TARGETS } from '../../shared/sizes.js'
 
-async function jfetch(pathname, opts) {
-  let res
-  try {
-    res = await fetch(`${API_BASE}${pathname}`, opts)
-  } catch {
-    throw new Error(`Can't reach the backend at ${API_BASE}. Is it running? Start everything with: npm run dev`)
+// ---- Drafts (localStorage) ----
+const DRAFT_PREFIX = 'ascgen:draft:'
+const AUTOSAVE = '_autosave'
+
+function draftKey(name) { return DRAFT_PREFIX + name }
+
+export async function listDrafts() {
+  const out = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i)
+    if (!k || !k.startsWith(DRAFT_PREFIX)) continue
+    const name = k.slice(DRAFT_PREFIX.length)
+    if (name === AUTOSAVE) continue
+    try {
+      const j = JSON.parse(localStorage.getItem(k))
+      out.push({ name: j.name ?? name, savedAt: j.savedAt, screens: j.state?.shots?.length ?? 0 })
+    } catch {}
   }
-  if (!res.ok) {
-    if (res.status === 404) return null
-    const data = await res.json().catch(() => ({}))
-    throw new Error(data.error || `request failed (HTTP ${res.status})`)
-  }
-  return res.json()
+  out.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))
+  return out
 }
 
-export const listDrafts = () => jfetch('/api/drafts').then((d) => d?.drafts || [])
-export const loadDraft = (name) => jfetch(`/api/drafts/${encodeURIComponent(name)}`)
-export const saveDraft = (name, state) =>
-  jfetch(`/api/drafts/${encodeURIComponent(name)}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, state }),
-  })
-export const deleteDraft = (name) => jfetch(`/api/drafts/${encodeURIComponent(name)}`, { method: 'DELETE' })
+export async function loadDraft(name) {
+  const raw = localStorage.getItem(draftKey(name))
+  if (!raw) return null
+  try { return JSON.parse(raw) } catch { return null }
+}
 
-export async function exportZip(screenshots, targetIds) {
-  let res
+export async function saveDraft(name, state) {
+  const rec = { name, savedAt: Date.now(), state }
   try {
-    res = await fetch(`${API_BASE}/api/export`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ screenshots, targetIds }),
-    })
-  } catch {
-    throw new Error(`Can't reach the backend at ${API_BASE}. Is it running? Start everything with: npm run dev`)
+    localStorage.setItem(draftKey(name), JSON.stringify(rec))
+  } catch (e) {
+    throw new Error("Couldn't save — browser storage is full. Delete some drafts and try again.")
   }
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    throw new Error(data.error || `export failed (HTTP ${res.status})`)
+  return { ok: true }
+}
+
+export async function deleteDraft(name) {
+  localStorage.removeItem(draftKey(name))
+  return { ok: true }
+}
+
+// ---- Export (canvas resize + JSZip, downloaded in-browser) ----
+
+function loadImg(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = dataUrl
+  })
+}
+
+// Master already matches its target family's aspect ratio, so this is a clean
+// scale to the exact output dimensions — no crop, same result sharp produced.
+async function resizeToPng(dataUrl, w, h) {
+  const img = await loadImg(dataUrl)
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(img, 0, 0, w, h)
+  const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'))
+  return blob
+}
+
+// screenshots: [{ name, targetId, pngBase64 }] — same shape App already builds.
+export async function exportZip(screenshots) {
+  if (!screenshots?.length) throw new Error('no screenshots')
+  const zip = new JSZip()
+  let n = 0
+  for (const entry of screenshots) {
+    const t = TARGETS.find((x) => x.id === entry.targetId)
+    if (!t) continue
+    const baseName = entry.name || `screenshot-${String(n + 1).padStart(2, '0')}`
+    const blob = await resizeToPng(entry.pngBase64, t.w, t.h)
+    zip.file(`${t.group}/${t.id}/${baseName}.png`, blob)
+    n++
   }
-  const blob = await res.blob()
-  const url = URL.createObjectURL(blob)
+  const out = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } })
+  const url = URL.createObjectURL(out)
   const a = document.createElement('a')
   a.href = url
   a.download = 'appstore-screenshots.zip'

@@ -373,7 +373,7 @@ export default function App() {
                     </label>
                   ))}
                 </div>
-                <p className="note">Export saves to your browser's Downloads (zip) and to <code>output/export/</code> in the project.</p>
+                <p className="note">Export builds a zip in your browser and downloads it — every selected size, rendered locally.</p>
               </div>
             )}
 

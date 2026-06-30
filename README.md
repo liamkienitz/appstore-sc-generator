@@ -10,16 +10,31 @@ No device-frame rendering and no AI — you supply the screenshot, the tool fram
 
 ```bash
 npm install
-npm run dev                 # client http://localhost:5173  · server http://localhost:3001
+npm run dev                 # http://localhost:5173
 ```
 
-No API key needed. (The server is just the `sharp` resize/zip backend.)
+No API key, no backend — it's a pure static client. Rendering, resizing, and zipping all happen in the browser.
+
+## Deploy (Cloudflare Pages)
+
+Fully static, so any static host works. For Cloudflare Pages:
+
+- **Build command:** `npm run build`
+- **Output directory:** `dist`
+- **Framework preset:** Vite (or None)
+
+Connect the repo in the Cloudflare dashboard → Pages → it builds and serves `dist`. Or one-off from the CLI:
+
+```bash
+npm run build
+npx wrangler pages deploy dist
+```
 
 ## Versions / drafts
 
-- Your work **autosaves** continuously — reload or restart and it comes back.
-- Save **named versions** ("Versions" panel, top of the sidebar) to keep multiple variants; Load or delete any of them later.
-- All drafts are JSON files in `output/drafts/` (the autosave is `_autosave.json`, hidden from the list). Delete the folder to wipe everything.
+- Your work **autosaves** continuously to the browser's `localStorage` — reload and it comes back.
+- Save **named versions** (Saves tab) to keep multiple variants; Load or delete any of them later.
+- Drafts live in `localStorage` (autosave key is `_autosave`, hidden from the list). They're per-browser; clearing site data wipes them.
 
 ## How to use
 
@@ -28,7 +43,7 @@ No API key needed. (The server is just the `sharp` resize/zip backend.)
 3. Set **font, weight, italic, sizes**, and nudge **heading / screen position / scale**. A safe-zone keeps text clear of crop edges.
 4. **Pop-out** (optional): tick *Enable*, then drag the green box over the region you want to lift out (e.g. a score row), drag the corner to resize. Tune its **width** and **vertical** position. It renders enlarged, white-framed, with a drop shadow, floating beyond the card edges.
 5. Pick a **Background** for the whole set — solid swatch, custom color, or gradient (angle + 2 stops).
-6. **Export** — pick sizes, click Export. You get a `appstore-screenshots.zip` in your browser's Downloads **and** the same files written to `output/export/` in the project (cleared & rewritten each export). Each screen is cropped/resized to exact store dimensions, foldered by platform.
+6. **Export** — pick sizes (Export tab), click Export. You get an `appstore-screenshots.zip` in your browser's Downloads. Each screen is resized to exact store dimensions in-browser and foldered by platform.
 
 ## Output sizes
 
@@ -50,17 +65,17 @@ iOS art is reused for Android via center cover-crop. Apple's iPhone ratio (~0.46
 `compose → export`
 
 - **compose** (`src/lib/render.js`) — deterministic HTML-canvas render at the 1320×2868 master: background, screenshot card (high, bottom bleeds off), auto-fit heading, wrapped subtext, and the native pop-out (`drawPopout`: crop a region → enlarge → white frame + shadow → float over the card). Same code drives the live preview and the export, so what you see is what ships.
-- **export** (`server/index.js → /api/export`) — `sharp` cover-crops each rendered screen to exact target pixels and streams a foldered zip.
+- **export** (`src/lib/api.js → exportZip`) — each rendered master is scaled to exact target pixels in a `<canvas>` and zipped with JSZip, foldered by platform — all client-side, no server.
 
 ## Project layout
 
 ```
-shared/sizes.js        size matrix + safe-zone constants (client + server)
+shared/sizes.js        size matrix + safe-zone constants
 src/lib/render.js      canvas compositor incl. drawPopout (single source of truth)
+src/lib/api.js         drafts (localStorage) + export (canvas resize + JSZip)
 src/lib/fonts.js       font catalog + webfont loader
 src/components/        BackgroundPicker, CanvasPreview, PopoutSelector
-src/App.jsx            wizard / state
-server/index.js        /api/export (sharp + zip)
+src/App.jsx            studio UI / state
 scripts/               CLI test harness — HTML fixtures + standalone scaffold builder
 output/                generated samples + showcase
 ```
