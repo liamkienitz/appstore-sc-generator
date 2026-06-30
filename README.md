@@ -15,20 +15,9 @@ npm run dev                 # http://localhost:5173
 
 No API key, no backend — it's a pure static client. Rendering, resizing, and zipping all happen in the browser.
 
-## Deploy (Cloudflare Pages)
+## Live
 
-Fully static, so any static host works. For Cloudflare Pages:
-
-- **Build command:** `npm run build`
-- **Output directory:** `dist`
-- **Framework preset:** Vite (or None)
-
-Connect the repo in the Cloudflare dashboard → Pages → it builds and serves `dist`. Or one-off from the CLI:
-
-```bash
-npm run build
-npx wrangler pages deploy dist
-```
+**[sc-gen.liamkienitz.com](https://sc-gen.liamkienitz.com/)**
 
 ## Versions / drafts
 
