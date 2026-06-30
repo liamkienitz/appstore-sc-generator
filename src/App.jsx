@@ -3,6 +3,7 @@ import CanvasPreview from './components/CanvasPreview.jsx'
 import BackgroundPicker from './components/BackgroundPicker.jsx'
 import PopoutSelector from './components/PopoutSelector.jsx'
 import DraftBar from './components/DraftBar.jsx'
+import HowItWorks from './components/HowItWorks.jsx'
 import { renderMaster } from './lib/render.js'
 import { TARGETS, DEFAULT_TARGET_IDS, groupFor, renderDimsFor } from '../shared/sizes.js'
 import { FONTS, WEIGHTS, DEFAULT_FONT, ensureFont } from './lib/fonts.js'
@@ -67,7 +68,13 @@ export default function App() {
   const [draftName, setDraftName] = useState('')
   const [draftStatus, setDraftStatus] = useState('')
   const [tab, setTab] = useState('content')
+  const [showIntro, setShowIntro] = useState(() => !localStorage.getItem('ascgen:seen-intro'))
   const loadedRef = useRef(false)
+
+  function dismissIntro() {
+    localStorage.setItem('ascgen:seen-intro', '1')
+    setShowIntro(false)
+  }
 
   const shot = shots[active]
 
@@ -197,6 +204,7 @@ export default function App() {
 
   return (
     <div className="studio">
+      {showIntro && <HowItWorks onClose={dismissIntro} />}
       {/* Top bar */}
       <div className="topbar">
         <span className="brand-name">Appstore SC Gen</span>
