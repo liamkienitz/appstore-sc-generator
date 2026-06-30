@@ -11,7 +11,7 @@ import { exportZip, listDrafts, loadDraft, saveDraft, deleteDraft } from './lib/
 
 const AUTOSAVE = '_autosave'
 
-const DEFAULT_BG = { type: 'solid', color: '#16A34A' }
+const DEFAULT_BG = { type: 'solid', color: '#1E1B4B' }
 
 const MAX_SHOTS = 10
 
@@ -264,6 +264,7 @@ export default function App() {
                   {shot.imageUrl ? 'Replace screenshot' : 'Click or drop your app screenshot (PNG)'}
                 </div>
                 <input id="file-in" type="file" accept="image/*" hidden onChange={(e) => onUpload(e.target.files[0])} />
+                <p className="note">No images are stored on external servers. Everything stays local to your machine.</p>
 
                 <div className="field">
                   <label>Heading (one word)</label>
