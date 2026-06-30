@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import CanvasPreview from './components/CanvasPreview.jsx'
 import BackgroundPicker from './components/BackgroundPicker.jsx'
 import PopoutSelector from './components/PopoutSelector.jsx'
@@ -11,6 +11,8 @@ import { exportZip, listDrafts, loadDraft, saveDraft, deleteDraft } from './lib/
 const AUTOSAVE = '_autosave'
 
 const DEFAULT_BG = { type: 'solid', color: '#16A34A' }
+
+const MAX_SHOTS = 10
 
 function newShot(i) {
   return {
@@ -64,6 +66,7 @@ export default function App() {
   const [drafts, setDrafts] = useState([])
   const [draftName, setDraftName] = useState('')
   const [draftStatus, setDraftStatus] = useState('')
+  const [tab, setTab] = useState('content')
   const loadedRef = useRef(false)
 
   const shot = shots[active]
@@ -130,14 +133,16 @@ export default function App() {
     setShots((s) => s.map((sh, i) => (i === active ? { ...sh, ...p } : sh)))
   }
 
-  function setCount(n) {
-    setShots((s) => {
-      const next = [...s]
-      while (next.length < n) next.push(newShot(next.length))
-      next.length = n
-      return next
-    })
-    if (active >= n) setActive(n - 1)
+  function addScreen() {
+    if (shots.length >= MAX_SHOTS) return
+    setShots((s) => [...s, newShot(s.length)])
+    setActive(shots.length)
+  }
+
+  function removeScreen(i) {
+    if (shots.length <= 1) return
+    setShots((s) => s.filter((_, idx) => idx !== i))
+    setActive((a) => (a >= i ? Math.max(0, a - 1) : a))
   }
 
   function onUpload(file) {
@@ -174,8 +179,6 @@ export default function App() {
     setTargetIds((t) => (t.includes(id) ? t.filter((x) => x !== id) : [...t, id]))
   }
 
-  const readyCount = useMemo(() => shots.filter((s) => s.imageUrl).length, [shots])
-
   // default vertical center of the pop-out: where the region sits on the card
   function autoCy(s) {
     const aspect = imageEl?.width ? imageEl.height / imageEl.width : 2.17
@@ -184,125 +187,205 @@ export default function App() {
     return (s.deviceTop ?? 0.3) + (p.sy + p.sh / 2) * cardHFrac
   }
 
+  const TABS = [
+    ['content', 'Content'],
+    ['type', 'Type'],
+    ['style', 'Style'],
+    ['export', 'Export'],
+    ['saves', 'Saves'],
+  ]
+
   return (
-    <div className="app">
-      <aside className="sidebar">
-        <h1>App Store Screenshot Generator</h1>
-        <p className="sub">Upload a screen, add a heading, pick a background, optionally lift a region out as a pop-out, then export every size.</p>
-
-        {error && <div className="banner">{error}</div>}
-
-        <h2>Versions</h2>
-        <DraftBar name={draftName} setName={setDraftName} drafts={drafts}
-          onSave={onSaveDraft} onLoad={onLoadDraft} onDelete={onDeleteDraft} status={draftStatus} />
-
-        <h2>Screenshots</h2>
-        <label>How many? ({shots.length})</label>
-        <input type="range" min="1" max="10" value={shots.length} onChange={(e) => setCount(Number(e.target.value))} style={{ width: '100%' }} />
-        <div className="tabs">
-          {shots.map((s, i) => (
-            <div key={s.id} className={`tab ${i === active ? 'active' : ''}`} onClick={() => setActive(i)}>{i + 1}{s.imageUrl ? '' : ' ·'}</div>
-          ))}
-        </div>
-
-        <h2>Screen {active + 1}</h2>
-        <div className="dropzone" onClick={() => document.getElementById('file-in').click()}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => { e.preventDefault(); onUpload(e.dataTransfer.files[0]) }}>
-          {shot.imageUrl ? 'Replace screenshot' : 'Click or drop your app screenshot (PNG)'}
-        </div>
-        <input id="file-in" type="file" accept="image/*" hidden onChange={(e) => onUpload(e.target.files[0])} />
-
-        <label>Heading (one word)</label>
-        <input type="text" value={shot.heading} placeholder="SCORE" onChange={(e) => patch({ heading: e.target.value })} />
-        <label>Heading size: {(shot.headingScale * 100).toFixed(0)}%</label>
-        <input type="range" min="0.5" max="1.6" step="0.05" value={shot.headingScale} onChange={(e) => patch({ headingScale: Number(e.target.value) })} style={{ width: '100%' }} />
-
-        <label>Subtext</label>
-        <input type="text" value={shot.subtext} placeholder="EVERY SHOT LIVE" onChange={(e) => patch({ subtext: e.target.value })} />
-        <label>Subtext size: {(shot.subScale * 100).toFixed(0)}%</label>
-        <input type="range" min="0.5" max="3" step="0.05" value={shot.subScale} onChange={(e) => patch({ subScale: Number(e.target.value) })} style={{ width: '100%' }} />
-        <label className="check" style={{ marginTop: 8 }}>
-          <input type="checkbox" checked={shot.subNoWrap} onChange={(e) => patch({ subNoWrap: e.target.checked })} /> Don't wrap (shrink to one line)
-        </label>
-
-        <label>Font</label>
-        <select value={shot.fontFamily} onChange={(e) => patch({ fontFamily: e.target.value })}>
-          {FONTS.map((f) => (
-            <option key={f.name} value={f.name} style={{ fontFamily: f.stack }}>{f.name}</option>
-          ))}
-        </select>
-        <div className="row" style={{ marginTop: 8 }}>
-          <div style={{ flex: 1 }}>
-            <label>Heading weight</label>
-            <select value={shot.headingWeight} onChange={(e) => patch({ headingWeight: Number(e.target.value) })}>
-              {WEIGHTS.map((w) => <option key={w.v} value={w.v}>{w.label}</option>)}
-            </select>
-          </div>
-          <label className="check" style={{ marginTop: 22 }}>
-            <input type="checkbox" checked={shot.headingItalic} onChange={(e) => patch({ headingItalic: e.target.checked })} /> Italic
-          </label>
-        </div>
-        <div className="row" style={{ marginTop: 8 }}>
-          <div style={{ flex: 1 }}>
-            <label>Subtext weight</label>
-            <select value={shot.subWeight} onChange={(e) => patch({ subWeight: Number(e.target.value) })}>
-              {WEIGHTS.map((w) => <option key={w.v} value={w.v}>{w.label}</option>)}
-            </select>
-          </div>
-          <label className="check" style={{ marginTop: 22 }}>
-            <input type="checkbox" checked={shot.subItalic} onChange={(e) => patch({ subItalic: e.target.checked })} /> Italic
-          </label>
-        </div>
-
-        <label>Heading position: {(shot.headingTop * 100).toFixed(0)}%</label>
-        <input type="range" min="0.03" max="0.2" step="0.005" value={shot.headingTop} onChange={(e) => patch({ headingTop: Number(e.target.value) })} style={{ width: '100%' }} />
-        <label>Screen position: {(shot.deviceTop * 100).toFixed(0)}%</label>
-        <input type="range" min="0.18" max="0.55" step="0.01" value={shot.deviceTop} onChange={(e) => patch({ deviceTop: Number(e.target.value) })} style={{ width: '100%' }} />
-        <label>Screen scale: {(shot.deviceScale * 100).toFixed(0)}%</label>
-        <input type="range" min="0.6" max="1.2" step="0.02" value={shot.deviceScale} onChange={(e) => patch({ deviceScale: Number(e.target.value) })} style={{ width: '100%' }} />
-
-        <h2>Pop-out</h2>
-        <label className="check">
-          <input type="checkbox" checked={shot.popout.enabled} onChange={(e) => patch({ popout: { ...shot.popout, enabled: e.target.checked } })} /> Enable cut-out pop-out
-        </label>
-        {shot.popout.enabled && (
-          <>
-            <p className="note">Drag the box over the area to lift out. Drag the corner to resize.</p>
-            <PopoutSelector imageUrl={shot.imageUrl} region={shot.popout} onChange={(region) => patch({ popout: { ...shot.popout, ...region } })} />
-            <label>Pop-out width: {((shot.popout.width ?? 0.92) * 100).toFixed(0)}%</label>
-            <input type="range" min="0.4" max="1.1" step="0.02" value={shot.popout.width ?? 0.92} onChange={(e) => patch({ popout: { ...shot.popout, width: Number(e.target.value) } })} style={{ width: '100%' }} />
-            <label>Pop-out vertical: {(((shot.popout.cy ?? autoCy(shot)) * 100)).toFixed(0)}%</label>
-            <input type="range" min="0.2" max="0.95" step="0.01" value={shot.popout.cy ?? autoCy(shot)} onChange={(e) => patch({ popout: { ...shot.popout, cy: Number(e.target.value) } })} style={{ width: '100%' }} />
-          </>
-        )}
-
-        <h2>Background (whole set)</h2>
-        <BackgroundPicker background={background} onChange={setBackground} />
-
-        <h2>Export sizes</h2>
-        <div className="checks">
-          {TARGETS.map((t) => (
-            <label key={t.id} className="check">
-              <input type="checkbox" checked={targetIds.includes(t.id)} onChange={() => toggleTarget(t.id)} />
-              {t.label} — {t.w}×{t.h}{t.required ? ' ★' : ''}
-            </label>
-          ))}
-        </div>
-        <p className="note">Export saves to your browser's Downloads (zip) and to <code>output/export/</code> in the project.</p>
-      </aside>
-
-      <main className="stage">
-        <div className="topbar">
-          <strong>Screen {active + 1} / {shots.length}</strong>
-          <span className="spacer" />
-          <button className="primary" onClick={onExport} disabled={busy || readyCount === 0}>
-            {busy ? 'Working…' : `Export ${readyCount} → zip`}
+    <div className="studio">
+      {/* Top bar */}
+      <div className="topbar">
+        <span className="brand-name">Appstore SC Gen</span>
+        <a className="brand-tag" href="https://liamkienitz.com" target="_blank" rel="noopener noreferrer">built by Liam Kienitz</a>
+        <div className="topbar-right">
+          <span className="screen-count">Screen {active + 1} / {shots.length}</span>
+          <button className="export-btn" onClick={onExport} disabled={busy}>
+            {busy ? 'Working…' : <>Export <span className="arrow">↓</span></>}
           </button>
         </div>
+      </div>
 
-        <CanvasPreview shot={shot} background={background} imageEl={imageEl} />
-      </main>
+      <div className="studio-body">
+        {/* Screens rail */}
+        <div className="rail">
+          <span className="rail-label">SCREENS</span>
+          {shots.map((s, i) => (
+            <div key={s.id} className={`rail-pill ${i === active ? 'active' : ''}`} onClick={() => setActive(i)}>
+              {i + 1}
+              {shots.length > 1 && (
+                <span className="rail-del" title="Remove screen"
+                  onClick={(e) => { e.stopPropagation(); removeScreen(i) }}>×</span>
+              )}
+            </div>
+          ))}
+          {shots.length < MAX_SHOTS && (
+            <div className="rail-add" onClick={addScreen}>+</div>
+          )}
+        </div>
+
+        {/* Canvas */}
+        <div className="canvas-stage">
+          <div className="canvas-badge">{(shot.headingScale * 100).toFixed(0)}% · {shot.fontFamily}</div>
+          <div className="canvas-scale">
+            <CanvasPreview shot={shot} background={background} imageEl={imageEl} />
+          </div>
+        </div>
+
+        {/* Inspector */}
+        <div className="inspector">
+          <div className="itabs">
+            {TABS.map(([id, label]) => (
+              <div key={id} className={`itab ${tab === id ? 'active' : ''}`} onClick={() => setTab(id)}>{label}</div>
+            ))}
+          </div>
+          <div className="inspector-body">
+            {error && <div className="banner">{error}</div>}
+
+            {tab === 'content' && (
+              <div className="stack">
+                <div
+                  className="dropzone"
+                  onClick={() => document.getElementById('file-in').click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { e.preventDefault(); onUpload(e.dataTransfer.files[0]) }}
+                >
+                  {shot.imageUrl ? 'Replace screenshot' : 'Click or drop your app screenshot (PNG)'}
+                </div>
+                <input id="file-in" type="file" accept="image/*" hidden onChange={(e) => onUpload(e.target.files[0])} />
+
+                <div className="field">
+                  <label>Heading (one word)</label>
+                  <input type="text" value={shot.heading} placeholder="HEADLINE" onChange={(e) => patch({ heading: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label className="lbl-row"><span>Heading size</span><span className="val">{(shot.headingScale * 100).toFixed(0)}%</span></label>
+                  <input type="range" min="0.5" max="1.6" step="0.05" value={shot.headingScale} onChange={(e) => patch({ headingScale: Number(e.target.value) })} />
+                </div>
+                <div className="field">
+                  <label>Subtext</label>
+                  <input type="text" value={shot.subtext} placeholder="Short description of this screen" onChange={(e) => patch({ subtext: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label className="lbl-row"><span>Subtext size</span><span className="val">{(shot.subScale * 100).toFixed(0)}%</span></label>
+                  <input type="range" min="0.5" max="3" step="0.05" value={shot.subScale} onChange={(e) => patch({ subScale: Number(e.target.value) })} />
+                </div>
+                <label className="check">
+                  <input type="checkbox" checked={shot.subNoWrap} onChange={(e) => patch({ subNoWrap: e.target.checked })} /> Don't wrap (shrink to one line)
+                </label>
+                <div className="field">
+                  <label>Font</label>
+                  <div className="select-wrap">
+                    <select value={shot.fontFamily} onChange={(e) => patch({ fontFamily: e.target.value })}>
+                      {FONTS.map((f) => (
+                        <option key={f.name} value={f.name} style={{ fontFamily: f.stack }}>{f.name}</option>
+                      ))}
+                    </select>
+                    <span className="select-caret">▾</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {tab === 'type' && (
+              <div className="stack">
+                <div className="field">
+                  <label>Heading weight</label>
+                  <div className="row">
+                    <div className="select-wrap" style={{ flex: 1 }}>
+                      <select value={shot.headingWeight} onChange={(e) => patch({ headingWeight: Number(e.target.value) })}>
+                        {WEIGHTS.map((w) => <option key={w.v} value={w.v}>{w.label}</option>)}
+                      </select>
+                      <span className="select-caret">▾</span>
+                    </div>
+                    <label className="check tight">
+                      <input type="checkbox" checked={shot.headingItalic} onChange={(e) => patch({ headingItalic: e.target.checked })} /> Italic
+                    </label>
+                  </div>
+                </div>
+                <div className="field">
+                  <label>Subtext weight</label>
+                  <div className="row">
+                    <div className="select-wrap" style={{ flex: 1 }}>
+                      <select value={shot.subWeight} onChange={(e) => patch({ subWeight: Number(e.target.value) })}>
+                        {WEIGHTS.map((w) => <option key={w.v} value={w.v}>{w.label}</option>)}
+                      </select>
+                      <span className="select-caret">▾</span>
+                    </div>
+                    <label className="check tight">
+                      <input type="checkbox" checked={shot.subItalic} onChange={(e) => patch({ subItalic: e.target.checked })} /> Italic
+                    </label>
+                  </div>
+                </div>
+                <div className="field">
+                  <label className="lbl-row"><span>Heading position</span><span className="val">{(shot.headingTop * 100).toFixed(0)}%</span></label>
+                  <input type="range" min="0.03" max="0.2" step="0.005" value={shot.headingTop} onChange={(e) => patch({ headingTop: Number(e.target.value) })} />
+                </div>
+                <div className="field">
+                  <label className="lbl-row"><span>Screen position</span><span className="val">{(shot.deviceTop * 100).toFixed(0)}%</span></label>
+                  <input type="range" min="0.18" max="0.55" step="0.01" value={shot.deviceTop} onChange={(e) => patch({ deviceTop: Number(e.target.value) })} />
+                </div>
+                <div className="field">
+                  <label className="lbl-row"><span>Screen scale</span><span className="val">{(shot.deviceScale * 100).toFixed(0)}%</span></label>
+                  <input type="range" min="0.6" max="1.2" step="0.02" value={shot.deviceScale} onChange={(e) => patch({ deviceScale: Number(e.target.value) })} />
+                </div>
+              </div>
+            )}
+
+            {tab === 'style' && (
+              <div className="stack">
+                <div className="field">
+                  <label>Background (whole set)</label>
+                  <BackgroundPicker background={background} onChange={setBackground} />
+                </div>
+                <label className="check">
+                  <input type="checkbox" checked={shot.popout.enabled} onChange={(e) => patch({ popout: { ...shot.popout, enabled: e.target.checked } })} /> Enable cut-out pop-out
+                </label>
+                {shot.popout.enabled && (
+                  <>
+                    <p className="note">Drag the box over the area to lift out. Drag the corner to resize.</p>
+                    <PopoutSelector imageUrl={shot.imageUrl} region={shot.popout} onChange={(region) => patch({ popout: { ...shot.popout, ...region } })} />
+                    <div className="field">
+                      <label className="lbl-row"><span>Pop-out width</span><span className="val">{((shot.popout.width ?? 0.92) * 100).toFixed(0)}%</span></label>
+                      <input type="range" min="0.4" max="1.1" step="0.02" value={shot.popout.width ?? 0.92} onChange={(e) => patch({ popout: { ...shot.popout, width: Number(e.target.value) } })} />
+                    </div>
+                    <div className="field">
+                      <label className="lbl-row"><span>Pop-out vertical</span><span className="val">{(((shot.popout.cy ?? autoCy(shot)) * 100)).toFixed(0)}%</span></label>
+                      <input type="range" min="0.2" max="0.95" step="0.01" value={shot.popout.cy ?? autoCy(shot)} onChange={(e) => patch({ popout: { ...shot.popout, cy: Number(e.target.value) } })} />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {tab === 'export' && (
+              <div className="stack">
+                <label className="section-label">Export sizes</label>
+                <div className="checks">
+                  {TARGETS.map((t) => (
+                    <label key={t.id} className="check">
+                      <input type="checkbox" checked={targetIds.includes(t.id)} onChange={() => toggleTarget(t.id)} />
+                      <span style={{ flex: 1 }}>{t.label}{t.required ? ' ★' : ''}</span>
+                      <span className="dim">{t.w}×{t.h}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="note">Export saves to your browser's Downloads (zip) and to <code>output/export/</code> in the project.</p>
+              </div>
+            )}
+
+            {tab === 'saves' && (
+              <div className="stack">
+                <DraftBar name={draftName} setName={setDraftName} drafts={drafts}
+                  onSave={onSaveDraft} onLoad={onLoadDraft} onDelete={onDeleteDraft} status={draftStatus} />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
